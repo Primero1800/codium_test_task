@@ -75,11 +75,6 @@ class LoggingConfig(CustomSettings):
         return logging.getLevelNamesMapping()[self.LOGGING_LEVEL]
 
 
-class RateLimiter(CustomSettings):
-    RATE_LIMITER_CALLS: int
-    RATE_LIMITER_PERIOD: int
-
-
 class RunConfig(CustomSettings):
     app_src: AppRunConfig = AppRunConfig()
 
@@ -96,7 +91,6 @@ class Settings(CustomSettings):
     run: RunConfig = RunConfig()
     tags: Tags = Tags()
     db: DB = DB()
-    rate_limiter: RateLimiter = RateLimiter()
 
 
 settings = Settings()
