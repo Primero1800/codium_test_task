@@ -8,7 +8,7 @@ from src.core.settings import settings
 from src.core.config import (
     AppConfigurer,
     SwaggerConfigurer,
-    DBConfigurer,
+    DBConfigurer, RateLimiter,
 )
 from src.api import router as router_api
 from src.scripts.pagination import paginate_result
@@ -55,6 +55,7 @@ SwaggerConfigurer.delete_router_tag(app)
     "/",
     tags=[settings.tags.ROOT_TAG,],
 )
+@RateLimiter.rate_limit()
 async def top(request: Request) -> str:
     return f"top here"
 
@@ -63,6 +64,7 @@ async def top(request: Request) -> str:
     "/echo/{thing}",
     tags=[settings.tags.TECH_TAG,],
 )
+@RateLimiter.rate_limit()
 def echo(request: Request, thing: str) -> str:
     return " ".join([thing for _ in range(3)])
 
