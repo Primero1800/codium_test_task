@@ -70,8 +70,8 @@ def echo(request: Request, thing: str) -> str:
 if __name__ == "__main__":
     # uvicorn src.main:app --host 0.0.0.0 --reload
     uvicorn.run(
-        app=settings.run.app1.APP_PATH,
-        host=settings.run.app1.APP_HOST,
+        app=settings.run.app_src.APP_PATH,
+        host=settings.run.app_src.APP_HOST,
         port=8001,                                 # original 8000 used in uvicorn server, started from system bash
-        reload=settings.run.app1.APP_RELOAD,
+        reload=settings.run.app_src.APP_RELOAD,
     )
