@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 
 import uvicorn
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 
 from src.core.settings import settings
@@ -11,7 +11,6 @@ from src.core.config import (
     DBConfigurer, RateLimiter,
 )
 from src.api import router as router_api
-from src.scripts.pagination import paginate_result
 
 
 @asynccontextmanager

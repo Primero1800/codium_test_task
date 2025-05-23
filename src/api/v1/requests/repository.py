@@ -4,7 +4,7 @@ from fastapi import status
 from sqlalchemy import select, Result
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from src.core.models import Request
 from src.tools.exceptions import CustomException
@@ -26,12 +26,16 @@ class Repository:
 
     async def get_all(
             self,
-            filter_model: "RequestFilter"
+            filter_model: "RequestFilter",
+            page: Optional[int] = 1,
+            size: Optional[int] = 10,
     ):
         query_filter = filter_model.filter(select(Request))
         stmt_filtered = filter_model.sort(query_filter)
 
         stmt = stmt_filtered.order_by(Request.id)
+
+        stmt = stmt.offset((page - 1) * size).limit(size)
 
         result: Result = await self.session.execute(stmt)
         return result.unique().scalars().all()

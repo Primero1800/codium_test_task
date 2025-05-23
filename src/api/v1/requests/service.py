@@ -23,13 +23,17 @@ class Service:
 
     async def get_all(
             self,
-            filter_model: Optional["RequestFilter"] = None
+            filter_model: Optional["RequestFilter"] = None,
+            page: Optional[int] = 1,
+            size: Optional[int] = 10,
     ):
         repository: Repository = Repository(
             session=self.session
         )
         return await repository.get_all(
-            filter_model=filter_model
+            filter_model=filter_model,
+            page=page,
+            size=size,
         )
 
     async def create_one(

@@ -1,11 +1,17 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict
+
+
+base_user_name = Field(examples=["John Doe", "Sarah Connor"])
+base_description = Field(examples=["Need advice", "Congratulate me!"])
 
 
 class BaseRequest(BaseModel):
-    user_name: str
-    description: str
+    model_config = ConfigDict(from_attributes=True)
+
+    user_name: str = base_user_name
+    description: str = base_description
 
 
 class RequestRead(BaseRequest):
