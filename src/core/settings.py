@@ -89,6 +89,9 @@ class Tags(CustomSettings):
     ROOT_TAG: str
     SWAGGER_TAG: str
 
+    REQUESTS_TAG: str
+    REQUESTS_PREFIX: str
+
 
 class Settings(CustomSettings):
     app: AppSettings = AppSettings()

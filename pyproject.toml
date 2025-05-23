@@ -6,7 +6,7 @@ authors = [
     {name = "Primero1800",email = "Primero@inbox.ru"}
 ]
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12, <4.0"
 dependencies = [
     "uvicorn[statdard] (>=0.34.2,<0.35.0)",
     "fastapi (>=0.115.12,<0.116.0)",
@@ -15,7 +15,8 @@ dependencies = [
     "asyncpg (>=0.30.0,<0.31.0)",
     "alembic (>=1.16.1,<2.0.0)",
     "pydantic-settings (>=2.9.1,<3.0.0)",
-    "orjson (>=3.10.18,<4.0.0)"
+    "orjson (>=3.10.18,<4.0.0)",
+    "fastapi-filter (>=2.0.1,<3.0.0)"
 ]
 
 
