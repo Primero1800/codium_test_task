@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 
-from aiokafka import AIOKafkaProducer, AIOKafkaClient
+from aiokafka import AIOKafkaProducer
 from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 from aiokafka.errors import KafkaConnectionError
 from fastapi.encoders import jsonable_encoder
