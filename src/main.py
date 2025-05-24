@@ -10,6 +10,7 @@ from src.core.config import (
     SwaggerConfigurer,
     DBConfigurer, RateLimiter,
 )
+from kafka_home import KafkaConfigurer
 from src.api import router as router_api
 
 
@@ -18,6 +19,7 @@ async def lifespan(application: FastAPI):
     # startup
     yield
     # shutdown
+    await KafkaConfigurer.close_producer()
     await DBConfigurer.dispose()
 
 
