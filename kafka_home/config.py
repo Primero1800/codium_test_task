@@ -42,7 +42,13 @@ class KafkaConfigurer:
         topic = await cls.get_topic_name(topic_name)
         async with cls._lock:
             if  topic not in cls._topics:
-                cls._topics.append(cls.create_topic_if_not_exists(topic))
+                cls._topics.append(
+                    cls.create_topic_if_not_exists(
+                        topic=topic,
+                        num_partitions=settings.kafka.KAFKA_NUM_PARTITIONS,
+                        replication_factor=settings.kafka.KAFKA_REPLICATION_FACTOR,
+                    )
+                )
         return topic
 
     @classmethod
