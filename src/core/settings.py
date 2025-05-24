@@ -2,23 +2,18 @@ import logging
 from pathlib import Path
 from typing import Literal
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from src.tools.base_custom_settings import BaseCustomSettings
+
 
 # /**/5_codium/src
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-class CustomSettings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=(
-            BASE_DIR / '.env.template',
-            BASE_DIR / '.env',
-        ),
-        case_sensitive=False,
-        extra='allow',
-        env_prefix='',
-        env_nested_delimiter='',
-    )
+class CustomSettings(BaseCustomSettings):
+    pass
+
+
+CustomSettings.set_app_base(BASE_DIR)
 
 
 class AppSettings(CustomSettings):
