@@ -3,6 +3,7 @@ import json
 import logging
 
 from aiokafka import AIOKafkaProducer
+from aiokafka.errors import KafkaConnectionError
 from fastapi.encoders import jsonable_encoder
 
 from .settings import settings
@@ -42,11 +43,20 @@ class KafkaConfigurer:
         except Exception as exc:
             cls.logger.error("Error occurred while coding instance to message", exc_info=exc)
             return
+
+        producer: AIOKafkaProducer | None = None
         try:
-            producer: AIOKafkaProducer = await cls.get_producer()
+            producer = await cls.get_producer()
+        except KafkaConnectionError as exc:
+            cls.logger.error("Error occurred while establishing connection to Kafka-server", exc_info=exc)
+            return # Можно добавить retries
+
+        try:
             await producer.send_and_wait(topic, message)
         except Exception as exc:
             cls.logger.error("Error occurred while sending message to topic", exc_info=exc)
+            return  # Можно добавить retries
+
 
     @classmethod
     async def encode_instance(cls, instance: dict) -> bytes:
