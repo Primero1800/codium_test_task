@@ -17,6 +17,7 @@ CustomSettings.set_app_base(BASE_DIR)
 class KafkaSettings(CustomSettings):
     KAFKA_SERVER_HOST: str
     KAFKA_SERVER_PORT: int
+    KAFKA_TOPIC_PREFIX: str
 
     @property
     def get_server(self) -> str:
