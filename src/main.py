@@ -19,7 +19,7 @@ async def lifespan(application: FastAPI):
     # startup
     yield
     # shutdown
-    await KafkaConfigurer.close_producer()
+    await KafkaConfigurer.stop_kafka()
     await DBConfigurer.dispose()
 
 

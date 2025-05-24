@@ -18,6 +18,9 @@ class KafkaSettings(CustomSettings):
     KAFKA_SERVER_HOST: str
     KAFKA_SERVER_PORT: int
     KAFKA_TOPIC_PREFIX: str
+    KAFKA_TOPIC_ACK: str
+    KAFKA_NUM_PARTITIONS: int
+    KAFKA_REPLICATION_FACTOR: int
 
     @property
     def get_server(self) -> str:
