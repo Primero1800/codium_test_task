@@ -6,11 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.tools.exceptions import CustomException
 from .repository import Repository
-from .schemas import RequestCreate
+from .schemas import RequestCreate, RequestRead
 from .exceptions import Errors
+
+from kafka_home import KafkaConfigurer
 
 if TYPE_CHECKING:
     from .filters import RequestFilter
+
+
+CLASS = "Request"
 
 
 logger = logging.Logger(__name__)
@@ -44,7 +49,7 @@ class Service:
             session=self.session
         )
         try:
-            return await repository.create_one(
+            orm_model = await repository.create_one(
                 instance=instance
             )
         except CustomException as exc:
@@ -55,3 +60,6 @@ class Service:
                     "detail": exc.msg,
                 }
             )
+        instance: RequestRead = RequestRead.model_validate(orm_model)
+        await KafkaConfigurer.send_message(instance.model_dump(), topic_name=CLASS)
+        return instance
