@@ -61,5 +61,5 @@ class Service:
                 }
             )
         instance: RequestRead = RequestRead.model_validate(orm_model)
-        await KafkaConfigurer.send_message(instance.model_dump(), topic_name=CLASS)
+        await KafkaConfigurer.send_message(instance.model_dump(), topic_name=CLASS.lower())
         return instance
