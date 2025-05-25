@@ -32,9 +32,8 @@ class StorageGateway:
             self.storage.set(key, value, ex=ex)
 
 
-
 @contextmanager
-def storage_context(use_redis=False):
+def storage_context(use_redis: bool = False):
     if use_redis:
         yield 'redis_client_placeholder'
     else:
