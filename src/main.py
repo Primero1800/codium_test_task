@@ -62,12 +62,12 @@ async def top(request: Request) -> str:
 
 
 @app.get(
-    "/echo/{thing}",
+    "/kafka/",
     tags=[settings.tags.TECH_TAG,],
 )
 @RateLimiter.rate_limit()
-def echo(request: Request, thing: str) -> str:
-    return " ".join([thing for _ in range(3)])
+async def kafka(request: Request):
+    return await KafkaConfigurer.read_message()
 
 
 if __name__ == "__main__":
