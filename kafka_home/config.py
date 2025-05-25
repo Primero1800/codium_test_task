@@ -4,26 +4,26 @@ import logging
 from typing import Any
 
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
-from aiokafka.admin import AIOKafkaAdminClient, NewTopic
 from aiokafka.errors import KafkaConnectionError
+from fastapi import status
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import ORJSONResponse
 
 from .settings import settings
+from .exceptions import Errors
 
 
 class KafkaConfigurer:
     _producer: AIOKafkaProducer | None = None
     _consumer: AIOKafkaConsumer | None = None
-    # _admin_client = None
-    _topics = []
+    _topics: list = []
 
-    _lock_prod = asyncio.Lock()
-    _lock_cons = asyncio.Lock()
-    _lock_adm = asyncio.Lock()
+    _lock_prod: asyncio.Lock = asyncio.Lock()
+    _lock_cons: asyncio.Lock = asyncio.Lock()
 
     _cons_paused: bool = False
 
-    logger = logging.getLogger(__name__)
+    logger: logging.Logger = logging.getLogger(__name__)
 
     @classmethod
     async def get_producer(cls) -> AIOKafkaProducer:
@@ -46,16 +46,12 @@ class KafkaConfigurer:
                     auto_offset_reset='earliest'
                 )
                 await cls._consumer.start()
+            else:
+                current_subs = cls._consumer.subscription()
+                if set(current_subs) != set(cls._topics):
+                    cls._consumer.unsubscribe()
+                    cls._consumer.subscribe(cls._topics)
         return cls._consumer
-
-    # @classmethod
-    # async def get_admin_client(cls) -> AIOKafkaAdminClient:
-    #     async with cls._lock_adm:
-    #         if cls._admin_client is None:
-    #             cls._admin_client = AIOKafkaAdminClient(
-    #                 bootstrap_servers=settings.kafka.get_server,
-    #             )
-    #         return cls._admin_client
 
     @classmethod
     async def get_topic(cls, topic_name: str) -> str:
@@ -63,25 +59,6 @@ class KafkaConfigurer:
         if topic not in cls._topics:
             cls._topics.append(topic)
         return topic
-
-    # @classmethod
-    # async def create_topic_if_not_exists(
-    #         cls,
-    #         topic: str,
-    #         num_partitions: int = 1,
-    #         replication_factor: int = 1
-    # ):
-    #     cls.logger.warning('!!!!!!!!!!!!!!!!!!!!!!!!!!! 77')  ###########################################
-    #     admin_client = await cls.get_admin_client()
-    #     cls.logger.warning('!!!!!!!!!!!!!!!!!!!!!!!!!!! 79')  ###########################################
-    #     await admin_client.create_topics([
-    #         NewTopic(
-    #             name=topic,
-    #             num_partitions=num_partitions,
-    #             replication_factor=replication_factor,
-    #         ),
-    #     ],)
-    #     return topic
 
     @classmethod
     async def close_producer(cls):
@@ -95,21 +72,14 @@ class KafkaConfigurer:
             await cls._consumer.stop()
             cls._consumer = None
 
-    # @classmethod
-    # async def close_admin_client(cls):
-    #     if cls._admin_client:
-    #         await cls._admin_client.close()
-    #         cls._admin_client = None
-
     @classmethod
     async def stop_kafka(cls):
         await cls.close_producer()
-        # await cls.close_admin_client()
         await cls.close_consumer()
 
     @classmethod
     async def get_topic_name(cls, topic_name: str):
-        return  settings.kafka.KAFKA_TOPIC_PREFIX + '-' + topic_name
+        return settings.kafka.KAFKA_TOPIC_PREFIX + '-' + topic_name
 
     @classmethod
     async def send_message(
@@ -121,20 +91,19 @@ class KafkaConfigurer:
             topic = await cls.get_topic(topic_name)
         except Exception as exc:
             cls.logger.error("Error occurred while creating topic", exc_info=exc)
-            return # Можно добавить retries
+            return  # Можно добавить retries
 
         try:
             message: bytes = await cls.encode_instance(instance)
         except Exception as exc:
             cls.logger.error("Error occurred while coding instance to message", exc_info=exc)
             return
-        producer: AIOKafkaProducer | None = None
 
         try:
-            producer = await cls.get_producer()
+            producer: AIOKafkaProducer = await cls.get_producer()
         except KafkaConnectionError as exc:
             cls.logger.error("Error occurred while establishing connection to Kafka-server", exc_info=exc)
-            return # Можно добавить retries
+            return  # Можно добавить retries
 
         try:
             result = await producer.send_and_wait(topic=topic, value=message)
@@ -154,25 +123,24 @@ class KafkaConfigurer:
 
     @classmethod
     async def read_message(cls):
-        cls.logger.warning('?????????????? conf 157') ##################################################
-        consumer: AIOKafkaConsumer | None = None
         try:
-            consumer = await cls.get_consumer()
-            cls.logger.warning('???????????CONSUMER??? conf 161')  ##################################################
+            consumer: AIOKafkaConsumer = await cls.get_consumer()
         except KafkaConnectionError as exc:
             cls.logger.error("Error occurred while establishing connection to Kafka-server", exc_info=exc)
-            return # Можно добавить retries
-        cls.logger.warning('?????????????? conf 179')  ##################################################
+            return  # Можно добавить retries
         try:
-            cls.logger.warning('???????????CONSUMER??? conf 167')  ##################################################
             message = await cls.consume_message(consumer)
-
-            cls.logger.warning('?????????????? conf 170')  ##########################################
-            cls.logger.warning(jsonable_encoder(message)) #################################
         except Exception as exc:
             cls.logger.error("Error occurred while reading message from topic", exc_info=exc)
             return  # Можно добавить retries
-        cls.logger.warning('?????????????? conf 175')  ##################################################
+        if not message:
+            return ORJSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={
+                    "message": Errors.HANDLER_MESSAGE(),
+                    "detail": Errors.NO_INSTANCES_AVAILABLE("messages")
+                }
+            )
         try:
             return await cls.decode_instance(message)
         except Exception as exc:
@@ -183,31 +151,30 @@ class KafkaConfigurer:
     async def resume(cls):
         cls._cons_paused = False
         cls._consumer.resume()
-        cls.logger.warning("???????????? conf 186") #############################################
 
     @classmethod
     async def pause(cls):
         cls._cons_paused = True
         cls._consumer.pause()
-        cls.logger.warning("????????3333333333333333???? conf 192") #############################################
 
     @classmethod
     async def consume_message(cls, consumer: AIOKafkaConsumer):
+        msg: Any = None
         if cls._cons_paused:
             await cls.resume()
         try:
-            cls.logger.warning("???????????? conf 199")  #############################################
-            msg = await consumer.getone()
-            cls.logger.warning("????????MESSAGE&&&&???? conf 201")  #############################################
-            cls.logger.warning(msg)  #############################################
+            msg = await cls.get_one_or_none(consumer)
             await cls.pause()
-            cls.logger.warning("???????????&&&&&&&&&&&&&&&&&?????? conf 204")  #############################################
-            if msg:
-                return msg.value
-            else:
-                return None
         except asyncio.CancelledError as exc:
             cls.logger.warning("Reading message cancelled:", exc_info=exc)
-        except Exception as exc:
-            cls.logger.warning("Error occurred while reading message:", exc_info=exc)  #############################################
-            return None
+        except TimeoutError as exc:
+            cls.logger.warning("Error occurred while reading message:", exc_info=exc)
+        finally:
+            return msg.value if msg else None
+
+    @classmethod
+    async def get_one_or_none(cls, consumer: AIOKafkaConsumer):
+        return await asyncio.wait_for(
+            consumer.getone(),
+            timeout=settings.kafka.KAFKA_CONSUMER_TIMEOUT,
+        )

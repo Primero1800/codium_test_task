@@ -21,6 +21,7 @@ class KafkaSettings(CustomSettings):
     KAFKA_TOPIC_ACK: str
     KAFKA_NUM_PARTITIONS: int
     KAFKA_REPLICATION_FACTOR: int
+    KAFKA_CONSUMER_TIMEOUT: int = 3
 
     @property
     def get_server(self) -> str:
