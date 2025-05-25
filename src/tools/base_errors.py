@@ -3,11 +3,12 @@ from typing import Any
 
 class BaseErrors:
     CLASS = "Object"
-    _CLASS = "objects"
+    CLASS_ = CLASS + 's'
+    _CLASS = CLASS_.lower()
 
     @classmethod
     def HANDLER_MESSAGE(cls):
-        return f"Handled by {cls.CLASS}s exception handler"
+        return f"Handled by {cls.CLASS} exception handler"
 
     @classmethod
     def DATABASE_ERROR(cls):
