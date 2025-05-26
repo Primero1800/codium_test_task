@@ -5,6 +5,7 @@ from fastapi.responses import ORJSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.tools.exceptions import CustomException
+from src.tools.redis_cache_decorator import cache
 from .repository import Repository
 from .schemas import RequestCreate, RequestRead
 from .exceptions import Errors
@@ -26,6 +27,7 @@ class Service:
         self.session = session
         self.logger = logger
 
+    @cache(log_events=True)
     async def get_all(
             self,
             filter_model: Optional["RequestFilter"] = None,
