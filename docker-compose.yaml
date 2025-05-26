@@ -1,6 +1,13 @@
 version: "3.12"
 
 services:
+  redis:
+    image: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   webapp:
     restart: unless-stopped
@@ -9,6 +16,7 @@ services:
     ports:
       - "8000:8000"
     environment:
+      REDIS_HOST: redis
       DB_HOST: db
       DB_NAME: f5_codium
       KAFKA_SERVER_HOST: kafka
@@ -16,6 +24,7 @@ services:
     depends_on:
       - db
       - kafka
+      - redis
     volumes:
       - ./alembic:/app/alembic
       - ./kafka_home:/app/kafka_home
@@ -59,3 +68,4 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:

@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import Callable, Any
 
+import redis
 from fastapi import Request, status
 from fastapi.responses import ORJSONResponse
 
@@ -17,6 +18,7 @@ logger = logging.getLogger(__name__)
 InMemoryStorage = {}
 
 
+# Uses for InMemory storage
 class StorageGateway:
     def __init__(self, storage: Any):
         self.storage = storage
@@ -25,17 +27,17 @@ class StorageGateway:
         return self.storage.get(key)
 
     async def set(self, key: str, value: Any, ex: int | None = None):
-        if isinstance(self.storage, dict):
-            self.storage[key] = value
-        else:
-            # ex=settings.redis.REDIS_CACHE_LIFETIME_SECONDS
-            self.storage.set(key, value, ex=ex)
+        self.storage[key] = value
 
 
 @contextmanager
 def storage_context(use_redis: bool = False):
     if use_redis:
-        yield 'redis_client_placeholder'
+        yield redis.asyncio.Redis(
+                    host=settings.redis.REDIS_HOST,
+                    port=settings.redis.REDIS_PORT,
+                    db=settings.redis.REDIS_DATABASE,
+                )
     else:
         yield StorageGateway(InMemoryStorage)
 
@@ -67,8 +69,8 @@ class RateLimiter:
                 unique_id: str = hashlib.sha256(ip_address.encode()).hexdigest()
                 now = time.time()
 
-                with storage_context() as client:
-                    storage_key = f"{settings.app.APP_NAME}_rate_limit:{unique_id}"
+                with storage_context(use_redis=True) as client:
+                    storage_key = f"{settings.app.APP_NAME}:rate_limit:{unique_id}"
                     timestamps = await client.get(storage_key)
                     if timestamps is None:
                         timestamps = []
@@ -82,6 +84,7 @@ class RateLimiter:
                         await client.set(
                             storage_key,
                             json.dumps(timestamps),
+                            ex=settings.redis.REDIS_CACHE_LIFETIME_SECONDS,
                         )
                         return await func(request, *args, **kwargs)
 
