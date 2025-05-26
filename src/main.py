@@ -8,7 +8,7 @@ from src.core.settings import settings
 from src.core.config import (
     AppConfigurer,
     SwaggerConfigurer,
-    DBConfigurer, RateLimiter,
+    DBConfigurer, RateLimiter, ExceptionHandlerConfigurer,
 )
 from kafka_home import KafkaConfigurer
 from src.api import router as router_api
@@ -42,6 +42,10 @@ app.include_router(
 )
 
 SwaggerConfigurer.config_swagger(app, settings.app.APP_TITLE)
+
+
+# comment if no need in custom exception_handler
+ExceptionHandlerConfigurer.config_exception_handler(app)
 
 
 ######################################################################
